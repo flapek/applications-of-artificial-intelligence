@@ -8,13 +8,12 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
     {
         try
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            using var reader = new StreamReader(args.Path);
+            var stopwatch = Stopwatch.StartNew();
+            using StreamReader reader = new (args.Path);
 
-            var array = await ReadFileAsync(reader);
-            var population = GeneratePopulation(array);
-
-            ConcurrentDictionary<int[], int> markedPopulation = MarkPopulations(population, array);
+            var matrix = await ReadFileAsync(reader);
+            var population = GeneratePopulation(matrix);
+            var markedPopulation = MarkPopulations(population, matrix);
 
             stopwatch.Stop();
             Console.WriteLine("Elapsed time in miliseconds: {0}", stopwatch.ElapsedMilliseconds);
@@ -51,17 +50,13 @@ int MarkPopulation(int[] population, int[][] distances)
     return result;
 }
 
-List<int[]> GeneratePopulation(int[][] array)
+List<int[]> GeneratePopulation(int[][] matrix)
 {
     List<int[]> population = new();
-    var indexes = new int[array.Length];
-    for (int i = 0; i < array.Length; i++)
-        indexes[i] = i;
+    var indexes = Enumerable.Range(0, matrix.Length).ToArray();
 
-    for (int i = 0; i < array.Length; i++)
-    {
+    for (int i = 0; i < matrix.Length; i++)
         population.Add(Randomize(indexes));
-    }
 
     return population;
 }
@@ -78,7 +73,8 @@ async ValueTask<int[][]> ReadFileAsync(StreamReader reader)
     for (int i = 0; i < size; i++)
     {
         result[i] = new int[size];
-        var line = (await reader.ReadLineAsync() ?? "").Trim().Split(' ').Select(s => int.Parse(s)).ToArray();
+        var line = (await reader.ReadLineAsync() ?? "").Trim().Split(' ')
+            .Select(s => int.Parse(s)).ToArray();
         for (int j = 0; j < line.Length; j++)
         {
             result[i][j] = line[j];
