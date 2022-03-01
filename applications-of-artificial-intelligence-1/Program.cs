@@ -20,8 +20,9 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
             Console.WriteLine("Elapsed time in miliseconds: {0}", stopwatch.ElapsedMilliseconds);
             return 0;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Console.WriteLine(ex.Message);
             return -3;
         }
     }, error => Task.FromResult(-1));
@@ -99,4 +100,3 @@ void Display(int[][] array)
         Console.WriteLine();
     }
 }
-
