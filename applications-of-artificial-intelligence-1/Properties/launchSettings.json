@@ -7,15 +7,15 @@
     },
     "test": {
       "commandName": "Project",
-      "commandLineArgs": "-p .\\data\\test.txt"
+      "commandLineArgs": "-d .\\data\\test.txt -p 3"
     },
     "berlin52": {
       "commandName": "Project",
-      "commandLineArgs": "-p .\\data\\berlin52.txt"
+      "commandLineArgs": "-d .\\data\\berlin52.txt -p 20"
     },
     "a280": {
       "commandName": "Project",
-      "commandLineArgs": "-p .\\data\\a280.txt"
+      "commandLineArgs": "-d .\\data\\a280.txt -p 100"
     }
   }
 }

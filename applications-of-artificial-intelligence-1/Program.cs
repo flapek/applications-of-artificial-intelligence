@@ -9,10 +9,10 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
         try
         {
             var stopwatch = Stopwatch.StartNew();
-            using StreamReader reader = new (args.Path);
+            using StreamReader reader = new(args.Path);
 
             var matrix = await ReadFileAsync(reader);
-            var population = GeneratePopulation(matrix);
+            var population = GeneratePopulation(matrix, args.Population);
             var markedPopulation = MarkPopulations(population, matrix);
 
             stopwatch.Stop();
@@ -44,18 +44,18 @@ int MarkPopulation(int[] population, int[][] distances)
         if (j >= population.Length)
             j = 0;
 
-        result += distances[population[i]][population[j]];    
+        result += distances[population[i]][population[j]];
     }
 
     return result;
 }
 
-List<int[]> GeneratePopulation(int[][] matrix)
+List<int[]> GeneratePopulation(int[][] matrix, int populationSize)
 {
     List<int[]> population = new();
     var indexes = Enumerable.Range(0, matrix.Length).ToArray();
 
-    for (int i = 0; i < matrix.Length; i++)
+    for (int i = 0; i < populationSize; i++)
         population.Add(Randomize(indexes));
 
     return population;
