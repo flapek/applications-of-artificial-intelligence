@@ -4,19 +4,29 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 
 await Parser.Default.ParseArguments<CommandLineOptions>(args)
-    .MapResult(async (CommandLineOptions args) =>
+    .MapResult(async args =>
     {
         try
         {
+            ValidateArgs(args);
+            
             var stopwatch = Stopwatch.StartNew();
             using StreamReader reader = new(args.Path);
 
             var matrix = await ReadFileAsync(reader);
             var population = GeneratePopulation(matrix, args.Population);
             var markedPopulation = MarkPopulations(population, matrix);
+            var generation = 0;
+
+            while (generation < 10)
+            {
+                generation++;
+                var temporaryPopulation = PopulationSelection(markedPopulation, args.KIndividuals);
+
+            }
 
             stopwatch.Stop();
-            Console.WriteLine("Elapsed time in miliseconds: {0}", stopwatch.ElapsedMilliseconds);
+            Console.WriteLine("Elapsed time in milliseconds: {0}", stopwatch.ElapsedMilliseconds.ToString());
             return 0;
         }
         catch (Exception ex)
@@ -24,25 +34,42 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
             Console.WriteLine(ex.Message);
             return -3;
         }
-    }, error => Task.FromResult(-1));
+    }, _ => Task.FromResult(-1));
 
-ConcurrentDictionary<int[], int> MarkPopulations(List<int[]> populations, int[][] distances)
+void ValidateArgs(CommandLineOptions args)
+{
+    if (args.Population < args.KIndividuals)
+        throw new Exception("K-individuals cannot be higher than population!!");
+}
+
+ConcurrentDictionary<int[], int> MarkPopulations(IEnumerable<int[]> populations, IReadOnlyList<int[]> distances)
 {
     ConcurrentDictionary<int[], int> result = new();
-    foreach (var population in populations)
-        result.TryAdd(population, MarkPopulation(population, distances));
+    foreach (var population in populations) result.TryAdd(population, MarkPopulation(population, distances));
 
     return result;
 }
 
-int MarkPopulation(int[] population, int[][] distances)
+IEnumerable<Generation> PopulationSelection(ConcurrentDictionary<int[], int> populations, int kIndividuals)
 {
-    int result = 0;
-    for (int i = 0; i < population.Length; i++)
+    List<Generation> result = new();
+    foreach (var population in populations)
+    {
+        var (p, mark) = populations
+            .OrderBy(a => Guid.NewGuid()).Take(kIndividuals)
+            .OrderBy(x => x.Value).FirstOrDefault();
+        result.Add(new (p, mark));
+    }
+    return result;
+}
+
+int MarkPopulation(IReadOnlyList<int> population, IReadOnlyList<int[]> distances)
+{
+    var result = 0;
+    for (var i = 0; i < population.Count; i++)
     {
         var j = i + 1;
-        if (j >= population.Length)
-            j = 0;
+        if (j >= population.Count) j = 0;
 
         result += distances[population[i]][population[j]];
     }
@@ -50,32 +77,28 @@ int MarkPopulation(int[] population, int[][] distances)
     return result;
 }
 
-List<int[]> GeneratePopulation(int[][] matrix, int populationSize)
+List<int[]> GeneratePopulation(IReadOnlyCollection<int[]> matrix, int populationSize)
 {
     List<int[]> population = new();
-    var indexes = Enumerable.Range(0, matrix.Length).ToArray();
+    var indexes = Enumerable.Range(0, matrix.Count).ToArray();
 
-    for (int i = 0; i < populationSize; i++)
-        population.Add(Randomize(indexes));
+    for (var i = 0; i < populationSize; i++) population.Add(Randomize(indexes));
 
     return population;
 }
 
-int[] Randomize(int[] indexes)
-    => indexes.OrderBy(_ => Random.Shared.Next()).ToArray();
+int[] Randomize(IEnumerable<int> indexes) => indexes.OrderBy(_ => Random.Shared.Next()).ToArray();
 
 async ValueTask<int[][]> ReadFileAsync(StreamReader reader)
 {
-    if (!int.TryParse(await reader.ReadLineAsync(), out int size))
-        return Array.Empty<int[]>();
+    if (!int.TryParse(await reader.ReadLineAsync(), out var size)) return Array.Empty<int[]>();
     var result = new int[size][];
 
-    for (int i = 0; i < size; i++)
+    for (var i = 0; i < size; i++)
     {
         result[i] = new int[size];
-        var line = (await reader.ReadLineAsync() ?? "").Trim().Split(' ')
-            .Select(s => int.Parse(s)).ToArray();
-        for (int j = 0; j < line.Length; j++)
+        var line = (await reader.ReadLineAsync() ?? "").Trim().Split(' ').Select(int.Parse).ToArray();
+        for (var j = 0; j < line.Length; j++)
         {
             result[i][j] = line[j];
             result[j][i] = line[j];
@@ -85,14 +108,13 @@ async ValueTask<int[][]> ReadFileAsync(StreamReader reader)
     return result;
 }
 
-void Display(int[][] array)
+void Display(IEnumerable<int[]> array)
 {
-    for (int i = 0; i < array.Length; i++)
+    foreach (var t in array)
     {
-        for (int j = 0; j < array[i].Length; j++)
-        {
-            Console.Write(array[i][j] + " ");
-        }
+        foreach (var t1 in t) Console.Write($"{t1} ");
         Console.WriteLine();
     }
 }
+
+record Generation(int[] Population, int Mark);

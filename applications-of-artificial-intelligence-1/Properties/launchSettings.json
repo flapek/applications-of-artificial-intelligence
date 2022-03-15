@@ -1,21 +1,16 @@
 {
   "profiles": {
-    "WSL-test": {
-      "commandName": "WSL2",
-      "environmentVariables": {},
-      "distributionName": ""
-    },
     "test": {
       "commandName": "Project",
-      "commandLineArgs": "-d .\\data\\test.txt -p 3"
+      "commandLineArgs": "-d ./data/test.txt -p 3 -k 2"
     },
     "berlin52": {
       "commandName": "Project",
-      "commandLineArgs": "-d .\\data\\berlin52.txt -p 20"
+      "commandLineArgs": "-d ./data/berlin52.txt -p 20 -k 2"
     },
     "a280": {
       "commandName": "Project",
-      "commandLineArgs": "-d .\\data\\a280.txt -p 100"
+      "commandLineArgs": "-d ./data/a280.txt -p 100 -k 4"
     }
   }
 }
