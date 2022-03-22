@@ -12,5 +12,15 @@ namespace applications_of_artificial_intelligence_1
         
         [Option('k', "kIndividuals", Required = true, HelpText = "K-individuals size")]
         public int KIndividuals { get; set; }
+
+        [Option('c', Required = false, HelpText = "Crucifixion algorithm type")]
+        public CrucifixionAlgorithmType CrucifixionAlgorithm { get; set; }
+    }
+
+    internal enum CrucifixionAlgorithmType
+    {
+        PMX,
+        OX,
+        CX
     }
 }
