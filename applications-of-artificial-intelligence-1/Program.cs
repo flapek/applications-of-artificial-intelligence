@@ -131,7 +131,52 @@ IEnumerable<int[]> CrucifixionPmx(IEnumerable<Generation> populations)
 
 IEnumerable<int[]> CrucifixionOx(IEnumerable<Generation> populations)
 {
-    throw new NotImplementedException();
+    var generations = populations as Generation[] ?? populations.ToArray();
+    var arrayLenght = generations[0].Population.Length;
+    var result = new List<int[]>();
+    for (var i = 0; i < generations.Length - 1; i += 2)
+    {
+        var (population1, _) = generations[i];
+        var (population2, _) = generations[i + 1];
+
+        var split1 = 0;
+        var split2 = 0;
+
+        while (split1 == split2)
+        {
+            split1 = Random.Shared.Next(1, arrayLenght - 1);
+            split2 = Random.Shared.Next(1, arrayLenght - 1);
+
+            if (split1 <= split2) continue;
+            var t = split1;
+            split1 = split2;
+            split2 = split1;
+        }
+
+        var newp1 = new int[arrayLenght];
+        var newp2 = new int[arrayLenght];
+
+        for (var j = split1; j < split2; j++)
+        {
+            newp1[j] = population1[j];
+            newp2[j] = population2[j];
+        }
+
+        for (var j = split2; j < arrayLenght + split2; j++)
+        {
+            var temporary = j % arrayLenght;
+            
+            newp1[temporary] = population2[k] != newp1[j] ? population1[k] : population1[j];
+            newp2[temporary] = population1[k] != newp2[j] ? population2[k] : population2[j];
+        }
+
+        result.Add(newp1);
+        result.Add(newp2);
+    }
+
+    if (generations.Length % 2 == 1) result.Add(generations.TakeLast(1).FirstOrDefault().Population);
+
+    return result;
 }
 
 IEnumerable<int[]> CrucifixionCx(IEnumerable<Generation> populations)
