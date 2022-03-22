@@ -53,10 +53,10 @@ ConcurrentDictionary<int[], int> MarkPopulations(IEnumerable<int[]> populations,
 IEnumerable<Generation> PopulationSelection(ConcurrentDictionary<int[], int> populations, int kIndividuals)
 {
     List<Generation> result = new();
-    foreach (var population in populations)
+    foreach (var _ in populations)
     {
         var (p, mark) = populations
-            .OrderBy(a => Guid.NewGuid()).Take(kIndividuals)
+            .OrderBy(_ => Guid.NewGuid()).Take(kIndividuals)
             .OrderBy(x => x.Value).FirstOrDefault();
         result.Add(new (p, mark));
     }
@@ -116,5 +116,6 @@ void Display(IEnumerable<int[]> array)
         Console.WriteLine();
     }
 }
+
 
 record Generation(int[] Population, int Mark);
