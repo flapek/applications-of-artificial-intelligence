@@ -9,7 +9,7 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
         try
         {
             ValidateArgs(args);
-            
+
             var stopwatch = Stopwatch.StartNew();
             using StreamReader reader = new(args.Path);
 
@@ -17,14 +17,18 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
             var population = GeneratePopulation(matrix, args.Population);
             var markedPopulation = MarkPopulations(population, matrix);
             var generation = 0;
-
+            var min = markedPopulation.FirstOrDefault(population => population.Value == markedPopulation.Min(x => x.Value));
             while (generation < 10)
             {
                 generation++;
                 var temporaryPopulation = PopulationSelection(markedPopulation, args.KIndividuals);
-
+                var childGeneration = Crucifixion(temporaryPopulation, args.CrucifixionAlgorithm);
+                childGeneration = Mutation(childGeneration);
+                markedPopulation = MarkPopulations(childGeneration, matrix);
+                min = markedPopulation.FirstOrDefault(population => population.Value == markedPopulation.Min(x => x.Value));
             }
-
+            
+            Console.WriteLine($"{min.Key.Aggregate("", (current, key) => current + $"{key}, ")} {min.Value}");
             stopwatch.Stop();
             Console.WriteLine("Elapsed time in milliseconds: {0}", stopwatch.ElapsedMilliseconds.ToString());
             return 0;
@@ -38,8 +42,7 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
 
 void ValidateArgs(CommandLineOptions args)
 {
-    if (args.Population < args.KIndividuals)
-        throw new Exception("K-individuals cannot be higher than population!!");
+    if (args.Population < args.KIndividuals) throw new Exception("K-individuals cannot be higher than population!!");
 }
 
 ConcurrentDictionary<int[], int> MarkPopulations(IEnumerable<int[]> populations, IReadOnlyList<int[]> distances)
@@ -55,11 +58,104 @@ IEnumerable<Generation> PopulationSelection(ConcurrentDictionary<int[], int> pop
     List<Generation> result = new();
     foreach (var _ in populations)
     {
-        var (p, mark) = populations
-            .OrderBy(_ => Guid.NewGuid()).Take(kIndividuals)
-            .OrderBy(x => x.Value).FirstOrDefault();
-        result.Add(new (p, mark));
+        var (p, mark) = populations.OrderBy(_ => Guid.NewGuid())
+            .Take(kIndividuals)
+            .OrderBy(x => x.Value)
+            .FirstOrDefault();
+        result.Add(new(p, mark));
     }
+
+    return result;
+}
+
+IEnumerable<int[]> Crucifixion(IEnumerable<Generation> populations, CrucifixionAlgorithmType algorithm) =>
+    algorithm switch
+    {
+        CrucifixionAlgorithmType.PMX => CrucifixionPmx(populations),
+        CrucifixionAlgorithmType.OX => CrucifixionOx(populations),
+        CrucifixionAlgorithmType.CX => CrucifixionCx(populations),
+        _ => throw new ArgumentOutOfRangeException(nameof(algorithm), algorithm, null)
+    };
+
+IEnumerable<int[]> CrucifixionPmx(IEnumerable<Generation> populations)
+{
+    var generations = populations as Generation[] ?? populations.ToArray();
+    var arrayLenght = generations[0].Population.Length;
+    var result = new List<int[]>();
+    for (var i = 0; i < generations.Length - 1; i += 2)
+    {
+        var (population1, _) = generations[i];
+        var (population2, _) = generations[i + 1];
+
+        var split1 = 0;
+        var split2 = 0;
+
+        while (split1 == split2)
+        {
+            split1 = Random.Shared.Next(1, arrayLenght - 1);
+            split2 = Random.Shared.Next(1, arrayLenght - 1);
+
+            if (split1 <= split2) continue;
+            var t = split1;
+            split1 = split2;
+            split2 = split1;
+        }
+
+        var newp1 = new int[arrayLenght];
+        var newp2 = new int[arrayLenght];
+
+        for (var j = split1; j < split2; j++)
+        {
+            newp1[j] = population2[j];
+            newp2[j] = population1[j];
+        }
+
+        for (var j = split1; j < split2; j++)
+        {
+            for (var k = 0; k < arrayLenght; k++)
+            {
+                if (j == k) continue;
+                newp1[k] = population1[k] != newp1[j] ? population1[k] : population1[j];
+                newp2[k] = population2[k] != newp2[j] ? population2[k] : population2[j];
+            }
+        }
+
+        result.Add(newp1);
+        result.Add(newp2);
+    }
+
+    if (generations.Length % 2 == 1) result.Add(generations.TakeLast(1).FirstOrDefault().Population);
+
+    return result;
+}
+
+IEnumerable<int[]> CrucifixionOx(IEnumerable<Generation> populations)
+{
+    throw new NotImplementedException();
+}
+
+IEnumerable<int[]> CrucifixionCx(IEnumerable<Generation> populations)
+{
+    throw new NotImplementedException();
+}
+
+IEnumerable<int[]> Mutation(IEnumerable<int[]> populations)
+{
+    var result = new List<int[]>();
+
+    foreach (var population in populations)
+    {
+        var idx = Random.Shared.Next(0, population.Length - 1);
+        var nextIdx = idx * 2 % population.Length;
+        var a = population[idx];
+        var b = population[nextIdx];
+
+        population[idx] = b;
+        population[nextIdx] = a;
+        
+        result.Add(population);
+    }
+    
     return result;
 }
 
@@ -77,7 +173,7 @@ int MarkPopulation(IReadOnlyList<int> population, IReadOnlyList<int[]> distances
     return result;
 }
 
-List<int[]> GeneratePopulation(IReadOnlyCollection<int[]> matrix, int populationSize)
+IEnumerable<int[]> GeneratePopulation(IReadOnlyCollection<int[]> matrix, int populationSize)
 {
     List<int[]> population = new();
     var indexes = Enumerable.Range(0, matrix.Count).ToArray();
@@ -116,6 +212,5 @@ void Display(IEnumerable<int[]> array)
         Console.WriteLine();
     }
 }
-
 
 record Generation(int[] Population, int Mark);
