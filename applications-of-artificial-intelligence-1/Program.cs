@@ -124,7 +124,7 @@ IEnumerable<int[]> CrucifixionPmx(IEnumerable<Generation> populations)
         result.Add(newp2);
     }
 
-    if (generations.Length % 2 == 1) result.Add(generations.TakeLast(1).FirstOrDefault().Population);
+    if (generations.Length % 2 == 1) result.Add(generations.TakeLast(1).FirstOrDefault()?.Population ?? throw new InvalidOperationException());
 
     return result;
 }
@@ -166,8 +166,8 @@ IEnumerable<int[]> CrucifixionOx(IEnumerable<Generation> populations)
         {
             var temporary = j % arrayLenght;
             
-            newp1[temporary] = population2[k] != newp1[j] ? population1[k] : population1[j];
-            newp2[temporary] = population1[k] != newp2[j] ? population2[k] : population2[j];
+            newp1[temporary] = population2[j] != newp1[j] ? population1[j] : population1[j];
+            newp2[temporary] = population1[j] != newp2[j] ? population2[j] : population2[j];
         }
 
         result.Add(newp1);
