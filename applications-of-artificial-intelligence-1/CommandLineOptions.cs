@@ -9,18 +9,14 @@ namespace applications_of_artificial_intelligence_1
 
         [Option('p', "population", Required = true, HelpText = "Population size")]
         public int Population { get; set; }
+        
+        [Option('c', Required = false, HelpText = "Crucifixion propability")]
+        public double CrucifixionPropability { get; set; } = 0.95;
 
-        [Option('k', "kIndividuals", Required = true, HelpText = "K-individuals size")]
-        public int KIndividuals { get; set; }
+        [Option('m', Required = false, HelpText = "Mutation propability")]
+        public double MutationPropability { get; set; } = 0.005;
 
-        [Option('c', Required = false, HelpText = "Crucifixion algorithm type")]
-        public CrucifixionAlgorithmType CrucifixionAlgorithm { get; set; }
-    }
-
-    internal enum CrucifixionAlgorithmType
-    {
-        PMX = 0,
-        OX = 1,
-        CX = 2
+        [Option('g', Required = true, HelpText = "Number of minimum generation")]
+        public int Generations { get; set; }
     }
 }

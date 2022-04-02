@@ -2,15 +2,15 @@
   "profiles": {
     "test": {
       "commandName": "Project",
-      "commandLineArgs": "-d ./data/test.txt -p 10 -k 2"
+      "commandLineArgs": "-d ./data/test.txt -p 10 -g 100"
     },
     "berlin52": {
       "commandName": "Project",
-      "commandLineArgs": "-d ./data/berlin52.txt -p 200 -k 2"
+      "commandLineArgs": "-d ./data/berlin52.txt -p 300 -g 2000"
     },
     "a280": {
       "commandName": "Project",
-      "commandLineArgs": "-d ./data/a280.txt -p 1000 -k 4"
+      "commandLineArgs": "-d ./data/a280.txt -p 1000 -g 10000"
     }
   }
 }
