@@ -28,7 +28,7 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
             populations = await Crucifixion(populations, CrucifixionAlgorithmType.Pmx, args.CrucifixionPropability);
             await Mutation(populations, args.MutationPropability);
             await UpdateMarks(populations);
-            
+
             min = populations.OrderBy(p => p.Mark).FirstOrDefault();
 
             if (generation % 100 != 0) continue;
@@ -71,25 +71,25 @@ async ValueTask<Generation[]> GeneratePopulation()
     var population = new Generation[populationSize];
     var indexes = Enumerable.Range(0, distancesLenght).ToArray();
 
-    for (var i = 0; i < populationSize; i++)
+    await Parallel.ForEachAsync(Enumerable.Range(0, populationSize), async (idx, _) =>
     {
         indexes = await Randomize(indexes);
-        population[i] = (new Generation(indexes, await MarkPopulation(indexes)));
-    }
+        population[idx] = (new Generation(indexes, await MarkPopulation(indexes)));
+    });
 
     return population.ToArray();
 }
 
-ValueTask<int[]> Randomize(int[] indexes) =>
+ValueTask<int[]> Randomize(IEnumerable<int> indexes) =>
     ValueTask.FromResult(indexes.OrderBy(_ => Random.Shared.Next()).ToArray());
 
-ValueTask<int> MarkPopulation(int[] population)
+ValueTask<int> MarkPopulation(IReadOnlyList<int> population)
 {
     var result = 0;
-    for (var i = 0; i < population.Length; i++)
+    for (var i = 0; i < population.Count; i++)
     {
         var j = i + 1;
-        if (j >= population.Length) j = 0;
+        if (j >= population.Count) j = 0;
 
         result += distances[population[i]][population[j]];
     }
@@ -109,12 +109,12 @@ ValueTask<Generation[]> PopulationSelection(Generation[] populations, int kIndiv
     return new ValueTask<Generation[]>(result);
 }
 
-ValueTask<Generation[]> Crucifixion(Generation[] populations, CrucifixionAlgorithmType algorithm,
+async ValueTask<Generation[]> Crucifixion(Generation[] populations, CrucifixionAlgorithmType algorithm,
     double crucifixionProbability)
 {
     var result = new Generation[populationSize];
 
-    for (var i = 0; i < populationSize; i += 2)
+    await Parallel.ForEachAsync(SteppedIterator(0, populationSize, 2), (i, _) =>
     {
         if (Random.Shared.NextDouble() < crucifixionProbability)
         {
@@ -128,17 +128,25 @@ ValueTask<Generation[]> Crucifixion(Generation[] populations, CrucifixionAlgorit
         }
         else
             (result[i], result[i + 1]) = (populations[i], populations[i + 1]);
-    }
+        
+        return ValueTask.CompletedTask;
+    });
+    
+    return result;
+}
 
-    return new ValueTask<Generation[]>(populations);
+IEnumerable<int> SteppedIterator(int startIndex, int endIndex, int stepSize)
+{
+    for (var i = startIndex; i < endIndex; i += stepSize)
+    {
+        yield return i;
+    }
 }
 
 (Generation gen1, Generation gen2) CrucifixionPmx(Generation gen1, Generation gen2)
 {
     var genLenght = gen1.Population.Length - 1;
     var (idx1, idx2) = (Random.Shared.Next(0, genLenght), Random.Shared.Next(0, genLenght));
-
-    
     
     return (gen1, gen2);
 }
@@ -153,26 +161,21 @@ ValueTask<Generation[]> Crucifixion(Generation[] populations, CrucifixionAlgorit
     return (gen1, gen2);
 }
 
-async Task Mutation(Generation[] populations, double mutationProbability)
+async Task Mutation(IEnumerable<Generation> populations, double mutationProbability)
 {
-    foreach (var gen in populations)
+    await Parallel.ForEachAsync(populations, (gen, _) =>
     {
-        if (Random.Shared.NextDouble() > mutationProbability) continue;
-
+        if (Random.Shared.NextDouble() > mutationProbability) return ValueTask.CompletedTask;
         var idx1 = Random.Shared.Next(0, gen.Population.Length - 1);
         var idx2 = Random.Shared.Next(0, gen.Population.Length - 1);
-
         (gen.Population[idx1], gen.Population[idx2]) = (gen.Population[idx2], gen.Population[idx1]);
-    }
-}
-async Task UpdateMarks(Generation[] populations)
-{
-    foreach (var gen in populations)
-    {
-        await gen.UpdateMark(await MarkPopulation(gen.Population));
-    }
+        return ValueTask.CompletedTask;
+    });
 }
 
+async Task UpdateMarks(IEnumerable<Generation> populations)
+    => await Parallel.ForEachAsync(populations,
+        async (gen, _) => await gen.UpdateMark(await MarkPopulation(gen.Population)));
 
 void Display(Generation generation) =>
     Console.WriteLine("{0} {1}", string.Join('-', generation.Population), generation.Mark);
@@ -181,7 +184,6 @@ internal struct Generation
 {
     public int[] Population { get; }
     public int Mark { get; private set; }
-
 
     public Generation(int[] population, int mark)
     {

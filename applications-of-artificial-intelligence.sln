@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.32126.317
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "applications-of-artificial-intelligence-1", "applications-of-artificial-intelligence-1\applications-of-artificial-intelligence-1.csproj", "{2AABDF1F-D87F-4DC7-B619-C53EC6CA34E7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "orTools", "orTools\orTools.csproj", "{606717D1-86AD-40A8-A390-8C71E90C84BB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{2AABDF1F-D87F-4DC7-B619-C53EC6CA34E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2AABDF1F-D87F-4DC7-B619-C53EC6CA34E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2AABDF1F-D87F-4DC7-B619-C53EC6CA34E7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{606717D1-86AD-40A8-A390-8C71E90C84BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{606717D1-86AD-40A8-A390-8C71E90C84BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{606717D1-86AD-40A8-A390-8C71E90C84BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{606717D1-86AD-40A8-A390-8C71E90C84BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

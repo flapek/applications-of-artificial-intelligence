@@ -1,0 +1,16 @@
+{
+  "profiles": {
+    "test": {
+      "commandName": "Project",
+      "commandLineArgs": "-d ./data/test.txt"
+    },
+    "berlin52": {
+      "commandName": "Project",
+      "commandLineArgs": "-d ./data/berlin52.txt"
+    },
+    "a280": {
+      "commandName": "Project",
+      "commandLineArgs": "-d ./data/a280.txt"
+    }
+  }
+}
