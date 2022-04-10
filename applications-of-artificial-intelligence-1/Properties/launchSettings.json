@@ -6,11 +6,11 @@
     },
     "berlin52": {
       "commandName": "Project",
-      "commandLineArgs": "-d ./data/berlin52.txt -p 300 -g 2000"
+      "commandLineArgs": "-d ./data/berlin52.txt -p 300 -g 20000"
     },
     "a280": {
       "commandName": "Project",
-      "commandLineArgs": "-d ./data/a280.txt -p 1000 -g 10000"
+      "commandLineArgs": "-d ./data/a280.txt -p 1000 -g 40000"
     }
   }
 }
