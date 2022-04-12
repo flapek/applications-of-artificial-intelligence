@@ -9,6 +9,7 @@
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>aai</ToolCommandName>
 		<PackageOutputPath>../nupkg</PackageOutputPath>
+		<AssemblyName>tsp</AssemblyName>
 	</PropertyGroup>
 
 	<ItemGroup>
