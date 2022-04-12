@@ -10,7 +10,7 @@ internal class Tsp
     private double _mutationProbability;
     private double _crucifixionProbability;
     private readonly int _kIndividuals;
-    private readonly CrucifixionAlgorithmType _algorithm;
+    private CrucifixionAlgorithmType _algorithm;
     private Generation[] _populations;
     private readonly Random _rnd;
 
@@ -32,11 +32,11 @@ internal class Tsp
     {
         var indexes = Enumerable.Range(0, _distancesLenght).ToArray();
 
-        await ForEachAsync(Enumerable.Range(0, _populationSize), async (idx, _) =>
+        foreach (var idx in Enumerable.Range(0, _populationSize))
         {
             var idxes = await Randomize(indexes);
             _populations[idx] = new Generation(idxes, await MarkPopulation(idxes));
-        });
+        }
     }
 
     public Task<Generation> ChooseMin()
@@ -59,8 +59,9 @@ internal class Tsp
     }
 
     public async Task UpdateMarks()
-        => await ForEachAsync(_populations,
-            async (gen, _) => gen.UpdateMark(await MarkPopulation(gen.Population)));
+    {
+        foreach (var gen in _populations) gen.UpdateMark(await MarkPopulation(gen.Population));
+    }
 
     private Task<Generation[]> TakeRandom()
     {
@@ -70,7 +71,7 @@ internal class Tsp
         return Task.FromResult(result);
     }
 
-    public async Task Mutation()
+    public Task Mutation()
     {
         foreach (var gen in _populations)
         {
@@ -79,6 +80,8 @@ internal class Tsp
             var idx2 = _rnd.Next(0, _distancesLenght - 1);
             (gen.Population[idx1], gen.Population[idx2]) = (gen.Population[idx2], gen.Population[idx1]);
         }
+
+        return Task.CompletedTask;
     }
 
     public async Task Crucifixion()
@@ -86,26 +89,50 @@ internal class Tsp
         foreach (var step in SteppedIterator(0, _populationSize, 2))
         {
             if (_rnd.NextDouble() > _crucifixionProbability) continue;
-            (_populations[step], _populations[step + 1]) =
-                await CrucifixionPmx(_populations[step], _populations[step + 1]);
+            (_populations[step], _populations[step + 1]) = _algorithm switch
+            {
+                CrucifixionAlgorithmType.Pmx => await CrucifixionPmx(_populations[step], _populations[step + 1]),
+                CrucifixionAlgorithmType.Ox => await CrucifixionOx(_populations[step], _populations[step + 1]),
+                CrucifixionAlgorithmType.Cx => await CrucifixionCx(_populations[step], _populations[step + 1]),
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
     }
 
-    public void UpdateMutationProbability() => _mutationProbability += 0.005;
-    
-    public void UpdateCrucifixionProbability() => _crucifixionProbability -= 0.005;
+    public void UpdateMutationProbability()
+    {
+        _mutationProbability += 0.005;
+    }
 
-    private ValueTask<int[]> Randomize(IEnumerable<int> indexes) =>
-        ValueTask.FromResult(indexes.OrderBy(_ => _rnd.Next()).ToArray());
+    public void UpdateCrucifixionProbability()
+    {
+        _crucifixionProbability -= 0.02;
+    }
+
+    public async Task MutationBomb()
+    {
+        var mutation = _mutationProbability;
+        _mutationProbability = 1;
+        await Mutation();
+        _mutationProbability = mutation;
+    }
+
+    public void ChangeAlgorithm()
+    {
+        _algorithm = (CrucifixionAlgorithmType) _rnd.Next(0, 3);
+    }
+
+    private ValueTask<int[]> Randomize(IEnumerable<int> indexes)
+    {
+        return ValueTask.FromResult(indexes.OrderBy(_ => _rnd.Next()).ToArray());
+    }
 
     private ValueTask<int> MarkPopulation(IReadOnlyList<int> population)
     {
         var result = 0;
-        for (var i = 0; i < _distancesLenght - 1; i++)
+        for (var i = 0; i < _distancesLenght; i++)
         {
-            var j = i + 1;
-            if (j >= _distancesLenght) j = 0;
-
+            var j = (i + 1) % (_distancesLenght);
             result += _distances[population[i], population[j]];
         }
 
@@ -156,26 +183,87 @@ internal class Tsp
 
         var mid1 = gen1.Population[idx1..idx2];
         var mid2 = gen2.Population[idx1..idx2];
-        
+
         return (
             new Generation(await Concat(
-                await HelpMethod(mid1, mid2, gen2.Population[..idx1]), 
+                await HelpMethod(mid1, mid2, gen2.Population[..idx1]),
                 mid1,
-                await HelpMethod(mid1, mid2, gen2.Population[idx2..])), 0), 
+                await HelpMethod(mid1, mid2, gen2.Population[idx2..])), 0),
             new Generation(await Concat(
-                await HelpMethod(mid2, mid1, gen1.Population[..idx1]), 
-                mid2, 
+                await HelpMethod(mid2, mid1, gen1.Population[..idx1]),
+                mid2,
                 await HelpMethod(mid2, mid1, gen1.Population[idx2..])), 0));
     }
 
-    // private static Task CrucifixionOx(Generation gen1, Generation gen2)
-    // {
-    //     return Task.CompletedTask;
-    // }
-    //
-    // private static Task CrucifixionCx(Generation gen1, Generation gen2)
-    // {
-    //     return Task.CompletedTask;
-    // }
-    
+    private async Task<(Generation gen1, Generation gen2)> CrucifixionOx(Generation gen1, Generation gen2)
+    {
+        Task<int[]> HelpMethod(int idx1, int idx2, int[] middle, int[] parent)
+        {
+            var result = new List<int>();
+            for (var i = idx2; i < parent.Length + idx2; i++)
+            {
+                var idx = i % parent.Length;
+                var x = parent[idx];
+                if (idx == idx1) result.AddRange(middle);
+                if (middle.Contains(x)) continue;
+
+                result.Add(x);
+            }
+
+            return Task.FromResult(result.ToArray());
+        }
+
+        var idx1 = _rnd.Next(0, _distancesLenght - 1);
+        var idx2 = _rnd.Next(0, _distancesLenght - 1);
+        if (idx1 == idx2) return (gen1, gen2);
+        if (idx1 > idx2) (idx1, idx2) = (idx2, idx1);
+
+        return (new Generation(await HelpMethod(idx1, idx2, gen1.Population[idx1..idx2], gen2.Population), 0),
+            new Generation(await HelpMethod(idx1, idx2, gen2.Population[idx1..idx2], gen1.Population), 0));
+    }
+
+    private async Task<(Generation gen1, Generation gen2)> CrucifixionCx(Generation gen1, Generation gen2)
+    {
+        Task<(int[] cycle, bool cycleExist)> FindCycle(int idx, int[] pop1, int[] pop2)
+        {
+            var result = new List<int>();
+            var startValue = pop1[idx];
+            var lastValue = pop2[idx];
+            result.Add(lastValue);
+            var exist = false;
+            foreach (var _ in pop1)
+            {
+                if (startValue == lastValue)
+                {
+                    exist = true;
+                    break;
+                }
+
+                lastValue = pop2.ElementAt(Array.IndexOf(pop1, lastValue));
+                result.Add(lastValue);
+            }
+
+            return Task.FromResult((result.ToArray(), cycleExist: exist));
+        }
+
+        Task<int[]> Build(int[] c, int[] pop1, int[] pop2)
+        {
+            var result = new List<int>();
+            for (var i = 0; i < _distancesLenght; i++) result.Add(c.Contains(pop1[i]) ? pop2[i] : pop1[i]);
+            return Task.FromResult(result.ToArray());
+        }
+
+        var (cycle, cycleExist) = await FindCycle(_rnd.Next(0, _distancesLenght), gen1.Population, gen2.Population);
+
+        return cycle.Length == _distancesLenght || !cycleExist
+            ? (gen1, gen2)
+            : (new Generation(await Build(cycle, gen1.Population, gen2.Population), 0),
+                new Generation(await Build(cycle, gen2.Population, gen1.Population), 0));
+    }
+
+    public void SetDefault()
+    {
+        _crucifixionProbability = 0.95;
+        _mutationProbability = 0.005;
+    }
 }

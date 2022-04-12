@@ -30,17 +30,20 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
                 stagnation = 0;
             }
             else
-                stagnation++;
-
-            if (stagnation % 100 == 0)
             {
-                tsp.UpdateMutationProbability();
-                tsp.UpdateCrucifixionProbability();
+                tsp.SetDefault();
+                stagnation++;
             }
 
-            if (generation % 100 != 0) continue;
+            if (stagnation % 600 == 0) tsp.UpdateMutationProbability();
+            if (stagnation % 600 == 0) tsp.UpdateCrucifixionProbability();
+            if (generation % 1000 > 800 && stagnation > 300) tsp.ChangeAlgorithm();
+            if (generation % 1000 > 800 && stagnation > 100) await tsp.MutationBomb();
+            if (stagnation > 15000) break;
+            
+            if (generation % 500 != 0) continue;
             Console.WriteLine(generation);
-            // Display(min);
+            Display(min);
         }
 
         stopwatch.Stop();
