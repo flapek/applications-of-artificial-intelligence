@@ -38,7 +38,7 @@ await Parser.Default.ParseArguments<CommandLineOptions>(args)
             if (stagnation % 600 == 0) tsp.UpdateMutationProbability();
             if (stagnation % 600 == 0) tsp.UpdateCrucifixionProbability();
             if (generation % 1000 > 800 && stagnation > 300) tsp.ChangeAlgorithm();
-            if (generation % 1000 > 800 && stagnation > 100) await tsp.MutationBomb();
+            if (generation % 1000 > 800 && stagnation % 100 > 90) await tsp.MutationBomb();
             if (stagnation > 15000) break;
             
             if (generation % 500 != 0) continue;
